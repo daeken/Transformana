@@ -1,5 +1,5 @@
 from __future__ import with_statement
-from Transformana import TransformNodes, Compare
+from Transformana import Macro, TransformNodes, Compare
 
 def rewriteCondition(matching, cond):
 	return Compare(matching, [('==', cond)])
@@ -32,3 +32,24 @@ def test(foo):
 print test(0)
 print test(1)
 print test(2)
+
+@Macro
+def printAst(ast):
+	import pprint
+	pprint.pprint(ast)
+
+@printAst
+def test2():
+	print 'Hello from test2'
+
+test2()
+
+@Macro
+def stringAst(ast):
+	return `ast`
+
+@stringAst
+def test3():
+	print 'This should never be callable'
+
+print test3

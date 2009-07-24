@@ -29,7 +29,7 @@ def expToAst(exp):
 		return exp
 
 def search(ast, type):
-	if not isinstance(ast, list):
+	if not isinstance(ast, list) and not isinstance(ast, tuple):
 		return
 	
 	if isinstance(ast, Exp) and ast[0] == type:
@@ -87,6 +87,9 @@ class Macro(object):
 		if new == None or funcAst == new:
 			subfunc.ast = funcAst
 			return subfunc
+		
+		if not isinstance(new, Exp) and not isinstance(new, list):
+			return new
 		
 		name = subfunc.func_code.co_name
 		ast = expToAst(new)
