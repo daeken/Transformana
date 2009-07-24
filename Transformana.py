@@ -10,10 +10,6 @@ for name in dir(pyast):
 	obj = getattr(pyast, name)
 	if inspect.isclass(obj) and issubclass(obj, pyast.Node):
 		astNodes[name.lower()] = obj
-
-for name in dir(pyast):
-	obj = getattr(pyast, name)
-	if inspect.isclass(obj) and issubclass(obj, pyast.Node):
 		globals()[name] = type(name.lower(), (Exp, ), {})
 
 def astToExp(ast):
