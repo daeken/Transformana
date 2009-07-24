@@ -11,11 +11,14 @@ for name in dir(pyast):
 	if inspect.isclass(obj) and issubclass(obj, pyast.Node):
 		astNodes[name.lower()] = obj
 
-fakeAst = dict((name, type(name.lower(), (Exp, ), {})) for name in dir(pyast))
+for name in dir(pyast):
+	obj = getattr(pyast, name)
+	if inspect.isclass(obj) and issubclass(obj, pyast.Node):
+		globals()[name] = type(name.lower(), (Exp, ), {})
 
 def astToExp(ast):
 	if isinstance(ast, pyast.Node):
-		return eval(`ast`, fakeAst)
+		return eval(`ast`)
 	else:
 		return ast
 
@@ -24,7 +27,7 @@ def expToAst(exp):
 		nodeCls = astNodes[exp[0]]
 		args = map(expToAst, exp[1:])
 		return nodeCls(*args)
-	elif isinstance(exp, list):
+	elif isinstance(exp, list) or isinstance(exp, tuple):
 		return map(expToAst, exp)
 	else:
 		return exp
@@ -39,6 +42,20 @@ def search(ast, type):
 	for node in ast:
 		for found in search(node, type):
 			yield found
+
+def transform(ast, type, func):
+	if not isinstance(ast, list):
+		return ast
+	
+	if isinstance(ast, Exp) and ast[0] == type:
+		new = func(ast)
+		if new != None:
+			ast = new
+	
+	for i, node in enumerate(ast):
+		ast[i] = transform(node, type, func)
+	
+	return ast
 
 def findFunction(ast, func):
 	code = func.func_code
@@ -92,3 +109,11 @@ class Macro(object):
 	
 	def __funcReturn__(self, newfunc):
 		self.newfunc = newfunc
+
+def TransformNodes(type):
+	def subtrans(func):
+		def transformBody(ast):
+			return transform(ast, type, func)
+		return Macro(transformBody)
+	
+	return subtrans
