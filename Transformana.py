@@ -1,10 +1,11 @@
 import sys, compiler, copy, inspect, os
 import compiler.ast as pyast
+from new import instancemethod
 
 class Exp(list):
 	def __init__(self, *x):
 		list.__init__(self, [self.__class__.__name__] + list(x))
-
+	
 astNodes = dict()
 for name in dir(pyast):
 	obj = getattr(pyast, name)
@@ -66,6 +67,9 @@ class Macro(object):
 		self.func = func
 	
 	def __call__(self, subfunc):
+		if isinstance(subfunc, instancemethod):
+			subfunc = subfunc.im_func
+		
 		if hasattr(subfunc, 'ast'):
 			funcAst = subfunc.ast
 		else:
@@ -116,3 +120,29 @@ def TransformNodes(type):
 		return Macro(transformBody)
 	
 	return subtrans
+
+@Macro
+def PrintAst(ast):
+	import pprint
+	pprint.pprint(ast)
+
+@Macro
+def GetAst(ast):
+	pass
+
+def quoteAst(exp):
+	if isinstance(exp, Exp):
+		nodeCls = astNodes[exp[0]].__name__
+		nodeCls = Getattr(Name('Transformana'), nodeCls)
+		return CallFunc(nodeCls, map(quoteAst, exp[1:]), None, None)
+	elif isinstance(exp, list) or isinstance(exp, tuple):
+		return List(map(quoteAst, exp))
+	else:
+		return Const(exp)
+
+@TransformNodes('with')
+def CodeQuote(ast):
+	assert ast[1] == ['name', 'quote'] and ast[2][0] == 'assname'
+	
+	body = ast[3][1]
+	return Assign([AssName(ast[2][1], 'OP_ASSIGN')], List([quoteAst(stmt) for stmt in body]))
